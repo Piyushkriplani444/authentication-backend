@@ -1,7 +1,10 @@
 {
   "projects": {
     "default": "",
-    "dev": "",
+    "dev": "authentication-backend-e8efd",
     "prod": ""
-  }
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
 }

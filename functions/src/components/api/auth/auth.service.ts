@@ -5,6 +5,7 @@ import {
   dataNotExistException,
   HttpException,
   invalidException,
+  unauthorizedException,
 } from '../../../utils/apiErrorHandler';
 import { sendMessage } from '../../../utils/sgMailer';
 import { hashPassword } from '../../../utils/bcrypt';
@@ -13,11 +14,41 @@ import { getAddToCurrentJST, getCurrentJST } from '../../../utils/dayjs';
 import { TokenDocument } from '../../../models/token/token.entity';
 import { addToken, deleteToken, getToken } from '../../../models/token';
 import { MESSAGE_RESET_PASSWORD } from './auth.message';
-// import { addUser, getUserByEmail, updateUserFields } from '../../../models/user';
-// import { UserDocument } from '../../../models/user/user.entity';
+import { addUser, getUserByEmail, updateUser, getUser } from '../../../models/user';
+import HttpStatusCode from '../../../constants/statusCode';
+import { APIError } from '../../../constants/exceptions';
+import { UserDocument } from '../../../models/user/user.entity';
+import { EMAIL_EXIST } from '../../../constants/errorMessage';
 
 export const createUser = async (email: string, password: string, name: string, phone: string, address: string) => {
   // TODO
+  try {
+    const user = await getUserByEmail(email);
+    if (user) throw new APIError(EMAIL_EXIST, HttpStatusCode.CONFLICT);
+
+    const hashedPassword = await hashPassword(password);
+
+    const userCreationDocument: UserDocument = {
+      user_id: uuidv4(),
+      email: email,
+      password: hashedPassword,
+      name: name,
+      phone: phone,
+      address: address,
+      status: 'active',
+      created_at: getCurrentJST(),
+      updated_at: '',
+      deleted_at: '',
+      refresh_token: '',
+    };
+
+    await addUser(userCreationDocument);
+
+    return;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 };
 
 export const forgotPassword = async (user: UserDocument) => {
@@ -56,7 +87,12 @@ export const updatePassword = async (password: string, tokenId: string) => {
 
     // TODO
     // await updateUserFields(token.user_id, { password: hashPassword(password), updated_at: getCurrentJST() });
+    const user = await getUser(token.user_id);
+    if (!user) throw unauthorizedException('User is not exist');
+    user.password = await hashPassword(password);
+    user.updated_at = getCurrentJST();
 
+    await updateUser(token.user_id, user);
     await deleteToken(tokenId);
 
     return Promise.resolve();

@@ -1,5 +1,5 @@
 import { DocumentData, FirestoreDataConverter, QueryDocumentSnapshot } from 'firebase-admin/firestore';
-
+import { WithSnapshotId } from '../types';
 /**
  * Firestoreに保存するデータの型
  */
